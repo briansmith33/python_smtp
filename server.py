@@ -18,7 +18,7 @@ MONGO_CONN_STRING=f"mongodb+srv://{config['MONGO_USER']}:{config['MONGO_PWD']}@{
 
 
 class Status(object):
-    CONN_EST = '220 smtp.nexus.com ESMTP Postfix'
+    CONN_EST = '220 ESMTP'
     SUCCESS = 250
     FAIL = 550
     ERROR = 500
