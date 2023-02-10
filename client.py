@@ -1,11 +1,19 @@
-from auth import cram_md5, cram_sha256, Auth
 from dotenv import dotenv_values
 from email import Email
 import hashlib
 import base64
 import socket
+import hmac
 import ssl
 config = dotenv_values(".env")
+
+
+class Auth(object):
+    PLAIN = 'PLAIN'
+    DIGEST_MD5 = 'DIGEST-MD5'
+    CRAM_MD5 = 'CRAM-MD5'
+    DIGEST_SHA256 = 'DIGEST-SHA256'
+    CRAM_SHA256 = 'CRAM-SHA256'
 
 
 class SMTPClient:
@@ -78,7 +86,7 @@ class SMTPClient:
             return
 
         if method == Auth.DIGEST_MD5:
-            nonce = response[len('334 '):]
+            nonce = base64.b64decode(response[len('334 '):])
             credentials = base64.b64encode(hashlib.md5(self.password.encode()+nonce).hexdigest().encode())
             self.client.send(credentials+b'\r\n')
             response = self.client.recv(self.buffer_size).decode().strip()
@@ -88,8 +96,9 @@ class SMTPClient:
             return
 
         if method == Auth.CRAM_MD5:
-            challenge = response[len('334 '):]
-            credentials = cram_md5(self.password, challenge)
+            challenge = base64.b64decode(response[len('334 '):])
+            digest = hmac.HMAC(self.password.encode(), challenge, hashlib.md5).hexdigest()
+            credentials = base64.b64encode(digest.encode())
             self.client.send(credentials+b'\r\n')
             response = self.client.recv(self.buffer_size).decode().strip()
             print(response)

@@ -1,6 +1,3 @@
-import random
-
-from auth import cram_md5, cram_sha256, Auth
 from dotenv import dotenv_values
 from pymongo import MongoClient
 from datetime import datetime
@@ -12,11 +9,20 @@ import hashlib
 import base64
 import socket
 import json
+import hmac
 import sys
 import ssl
 config = dotenv_values(".env")
 
 MONGO_CONN_STRING=f"mongodb+srv://{config['MONGO_USER']}:{config['MONGO_PWD']}@{config['MONGO_CLUSTER']}/{config['MONGO_DB']}?retryWrites=true&w=majority"
+
+
+class Auth(object):
+    PLAIN = 'PLAIN'
+    DIGEST_MD5 = 'DIGEST-MD5'
+    CRAM_MD5 = 'CRAM-MD5'
+    DIGEST_SHA256 = 'DIGEST-SHA256'
+    CRAM_SHA256 = 'CRAM-SHA256'
 
 
 class Status(object):
@@ -174,8 +180,8 @@ class SMTPServer:
             return False
 
         if method == Auth.DIGEST_MD5:
-            nonce = ssl.RAND_bytes(16)
-            conn.send(b'334 '+nonce+b'\r\n')
+            nonce = base64.b64encode(ssl.RAND_bytes(16)).decode()
+            conn.send(b'334 '+nonce.encode()+b'\r\n')
             credentials = conn.recv(self.buffer_size).decode().strip()
             if base64.b64decode(credentials) == hashlib.md5(self.password+nonce).hexdigest():
                 conn.send(b'235 2.7.0  Authentication Succeeded\r\n')
@@ -184,11 +190,11 @@ class SMTPServer:
             return False
 
         if method == Auth.CRAM_MD5:
-            challenge = base64.b64encode(ssl.RAND_bytes(32)).decode()
-            conn.send(b'334 ' + challenge.encode() + b'\r\n')
+            challenge = ssl.RAND_bytes(32)
+            conn.send(b'334 ' + base64.b64encode(challenge) + b'\r\n')
             credentials = conn.recv(self.buffer_size).decode().strip()
-            print(credentials)
-            if credentials == cram_md5(self.password, challenge).decode():
+            digest = hmac.HMAC(self.password.encode(), challenge, hashlib.md5).hexdigest()
+            if credentials == base64.b64encode(digest.encode()).decode():
                 conn.send(b'235 2.7.0  Authentication Succeeded\r\n')
                 return True
             conn.send(b'535 5.7.8  Authentication credentials invalid\r\n')
