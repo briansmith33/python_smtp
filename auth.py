@@ -18,8 +18,3 @@ def cram_md5(password, challenge):
     return base64.b64encode(digest.encode())
 
 
-def cram_sha256(password, challenge):
-    password = password.encode('utf-8')
-    challenge = base64.b64decode(challenge)
-    digest = hmac.HMAC(password, challenge, hashlib.sha256).hexdigest()
-    return base64.b64encode(digest.encode())

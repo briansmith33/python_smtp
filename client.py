@@ -96,25 +96,6 @@ class SMTPClient:
                 self.is_authenticated = True
             return
 
-        if method == Auth.DIGEST_SHA256:
-            credentials = base64.b64encode(hashlib.sha256(self.password.encode()).hexdigest().encode())
-            self.client.send(credentials + b'\r\n')
-            response = self.client.recv(self.buffer_size).decode().strip()
-            print(response)
-            if response.startswith('235'):
-                self.is_authenticated = True
-            return
-
-        if method == Auth.CRAM_SHA256:
-            challenge = response[len('334 '):]
-            credentials = cram_sha256(self.password, challenge)
-            self.client.send(credentials+b'\r\n')
-            response = self.client.recv(self.buffer_size).decode().strip()
-            print(response)
-            if response.startswith('235'):
-                self.is_authenticated = True
-            return
-
     def start_tls(self):
         self.client.send(b'STARTTLS\r\n')
         response = self.client.recv(self.buffer_size).decode().strip()

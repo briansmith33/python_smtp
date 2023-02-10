@@ -1,2 +1,4 @@
 .idea
 .env
+scratch.py
+__pycache__/

@@ -191,25 +191,6 @@ class SMTPServer:
             conn.send(b'535 5.7.8  Authentication credentials invalid\r\n')
             return False
 
-        if method == Auth.DIGEST_SHA256:
-            conn.send(b'334 \r\n')
-            credentials = conn.recv(self.buffer_size).decode().strip()
-            if base64.b64decode(credentials) == hashlib.sha256(self.password).hexdigest():
-                conn.send(b'235 2.7.0  Authentication Succeeded\r\n')
-                return True
-            conn.send(b'535 5.7.8  Authentication credentials invalid\r\n')
-            return False
-
-        if method == Auth.CRAM_SHA256:
-            challenge = base64.b64encode(ssl.RAND_bytes(32)).decode()
-            conn.send(b'334 ' + challenge.encode() + b'\r\n')
-            credentials = conn.recv(self.buffer_size).decode().strip()
-            if credentials == cram_sha256(self.password, challenge).decode():
-                conn.send(b'235 2.7.0  Authentication Succeeded\r\n')
-                return True
-            conn.send(b'535 5.7.8  Authentication credentials invalid\r\n')
-            return False
-
         conn.send(b'504 5.5.4 Unrecognized authentication type\r\n')
         return False
 
@@ -244,11 +225,11 @@ class SMTPServer:
                 if relay in self.accepted_relays:
                     conn.send(b'250-smtp2.' + self.domain.encode() + b' EHLO ' + relay.encode() + b'\r\n')
                     if is_tls:
-                        conn.send(b'250-AUTH GSSAPI DIGEST-MD5 CRAM-MD5 DIGEST-SHA256 CRAM-SHA256 PLAIN\r\n')
+                        conn.send(b'250-AUTH GSSAPI DIGEST-MD5 CRAM-MD5 PLAIN\r\n')
                         conn.send(b'250-SIZE ' + str(self.max_msg_size).encode() + b'\r\n')
                         conn.send(b'250 HELP\r\n')
                     else:
-                        conn.send(b'250-AUTH GSSAPI DIGEST-MD5 CRAM-MD5 DIGEST-SHA256 CRAM-SHA256\r\n')
+                        conn.send(b'250-AUTH GSSAPI DIGEST-MD5 CRAM-MD5\r\n')
                         conn.send(b'250-SIZE ' + str(self.max_msg_size).encode() + b'\r\n')
                         conn.send(b'250-STARTTLS\r\n')
                         conn.send(b'250 HELP\r\n')
@@ -256,11 +237,11 @@ class SMTPServer:
 
             if msg.upper().startswith('HELP'):
                 if is_tls:
-                    conn.send(b'250-AUTH GSSAPI DIGEST-MD5 CRAM-MD5 DIGEST-SHA256 CRAM-SHA256 PLAIN\r\n')
+                    conn.send(b'250-AUTH GSSAPI DIGEST-MD5 CRAM-MD5 PLAIN\r\n')
                     conn.send(b'250-SIZE ' + str(self.max_msg_size).encode() + b'\r\n')
                     conn.send(b'250 HELP\r\n')
                 else:
-                    conn.send(b'250-AUTH GSSAPI DIGEST-MD5 CRAM-MD5 DIGEST-SHA256 CRAM-SHA256\r\n')
+                    conn.send(b'250-AUTH GSSAPI DIGEST-MD5 CRAM-MD5\r\n')
                     conn.send(b'250-SIZE ' + str(self.max_msg_size).encode() + b'\r\n')
                     conn.send(b'250-STARTTLS\r\n')
                     conn.send(b'250 HELP\r\n')
