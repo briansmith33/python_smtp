@@ -78,7 +78,8 @@ class SMTPClient:
             return
 
         if method == Auth.DIGEST_MD5:
-            credentials = base64.b64encode(hashlib.md5(self.password.encode()).hexdigest().encode())
+            nonce = response[len('334 '):]
+            credentials = base64.b64encode(hashlib.md5(self.password.encode()+nonce).hexdigest().encode())
             self.client.send(credentials+b'\r\n')
             response = self.client.recv(self.buffer_size).decode().strip()
             print(response)

@@ -1,3 +1,5 @@
+import random
+
 from auth import cram_md5, cram_sha256, Auth
 from dotenv import dotenv_values
 from pymongo import MongoClient
@@ -172,9 +174,10 @@ class SMTPServer:
             return False
 
         if method == Auth.DIGEST_MD5:
-            conn.send(b'334 \r\n')
+            nonce = ssl.RAND_bytes(16)
+            conn.send(b'334 '+nonce+b'\r\n')
             credentials = conn.recv(self.buffer_size).decode().strip()
-            if base64.b64decode(credentials) == hashlib.md5(self.password).hexdigest():
+            if base64.b64decode(credentials) == hashlib.md5(self.password+nonce).hexdigest():
                 conn.send(b'235 2.7.0  Authentication Succeeded\r\n')
                 return True
             conn.send(b'535 5.7.8  Authentication credentials invalid\r\n')
